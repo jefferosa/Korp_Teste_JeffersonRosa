@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Estoque.API.Data;
+﻿using Estoque.API.Data;
+using Estoque.API.DTOs;
 using Estoque.API.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Estoque.API.Controllers
 {
@@ -47,6 +48,35 @@ namespace Estoque.API.Controllers
 
             // Retorna o status 201 Created com os dados do produto salvo
             return CreatedAtAction(nameof(GetProdutos), new { id = produto.Id }, produto);
+        }
+
+        // PUT: api/produtos/baixar-estoque
+        [HttpPut("baixar-estoque")]
+        public async Task<IActionResult> BaixarEstoque([FromBody] List<BaixaEstoqueDto> itens)
+        {
+            foreach (var item in itens)
+            {
+                var produto = await _context.Produtos.FirstOrDefaultAsync(p => p.Codigo == item.CodigoProduto);
+
+                if (produto == null)
+                    return NotFound($"Produto {item.CodigoProduto} não encontrado.");
+
+                if (produto.Saldo < item.Quantidade)
+                    return BadRequest($"Saldo insuficiente para o produto {produto.Codigo}.");
+
+                produto.Saldo -= item.Quantidade;
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("Concorrência detectada: o saldo foi modificado por outra transação.");
+            }
+
+            return Ok();
         }
     }
 }

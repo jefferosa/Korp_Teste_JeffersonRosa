@@ -62,5 +62,38 @@ namespace Faturamento.API.Controllers
 
             return Ok(notaFiscal);
         }
+
+        // POST: api/notasfiscais/{id}/imprimir
+        [HttpPost("{id}/imprimir")]
+        public async Task<IActionResult> Imprimir(int id, [FromServices] Services.EstoqueService estoqueService)
+        {
+            var nota = await _context.NotasFiscais
+                .Include(n => n.Itens)
+                .FirstOrDefaultAsync(n => n.Id == id);
+
+            if (nota == null) return NotFound("Nota fiscal não encontrada.");
+
+            // Regra de negócio: apenas notas Abertas podem ser impressas
+            if (nota.Status != StatusNota.Aberta)
+                return BadRequest("Apenas notas com status 'Aberta' podem ser impressas.");
+
+            var itensBaixa = nota.Itens.Select(i => new Services.BaixaEstoqueDto
+            {
+                CodigoProduto = i.CodigoProduto,
+                Quantidade = i.Quantidade
+            }).ToList();
+
+            // Comunicação HTTP com resiliência (Polly)
+            var sucesso = await estoqueService.BaixarEstoqueAsync(itensBaixa);
+
+            if (!sucesso)
+                return StatusCode(503, "O Serviço de Estoque está indisponível ou o saldo é insuficiente. Tente novamente mais tarde.");
+
+            // Atualiza o status para Fechada após o sucesso da baixa
+            nota.Status = StatusNota.Fechada;
+            await _context.SaveChangesAsync();
+
+            return Ok(nota);
+        }
     }
 }

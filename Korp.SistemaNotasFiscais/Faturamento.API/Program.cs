@@ -1,5 +1,8 @@
 using Faturamento.API.Data;
 using Microsoft.EntityFrameworkCore;
+using Faturamento.API.Services;
+using Polly;
+using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +16,19 @@ builder.Services.AddSwaggerGen();
 // Registrando o contexto do banco de dados (SQLite) para o Faturamento
 builder.Services.AddDbContext<FaturamentoDbContext>(options =>
     options.UseSqlite("Data Source=faturamento.db"));
+
+// Configuração do Tratamento de Falhas (Polly)
+var retryPolicy = HttpPolicyExtensions
+    .HandleTransientHttpError()
+    .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+
+// Registra o EstoqueService e o HttpClient apontando para a porta do Estoque
+// IMPORTANTE: Troque a porta 5001 abaixo pela porta real que o seu Estoque.API abriu (ex: 5192, 5001, etc)
+builder.Services.AddHttpClient<EstoqueService>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5192");
+})
+.AddPolicyHandler(retryPolicy);
 
 var app = builder.Build();
 
