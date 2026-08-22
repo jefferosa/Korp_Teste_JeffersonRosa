@@ -45,6 +45,18 @@ namespace Faturamento.API.Controllers
             return CreatedAtAction(nameof(GetNotaFiscal), new { id = notaFiscal.Id }, notaFiscal);
         }
 
+        // GET: api/notasfiscais
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<NotaFiscal>>> GetNotasFiscais()
+        {
+            var notas = await _context.NotasFiscais
+                .Include(n => n.Itens)
+                .OrderByDescending(n => n.Id) // Mostra as mais recentes primeiro
+                .ToListAsync();
+
+            return Ok(notas);
+        }
+
         // GET: api/notasfiscais/{id}
         // Este endpoint é necessário para o retorno do CreatedAtAction acima
         [HttpGet("{id}")]
@@ -83,11 +95,14 @@ namespace Faturamento.API.Controllers
                 Quantidade = i.Quantidade
             }).ToList();
 
-            // Comunicação HTTP com resiliência (Polly)
-            var sucesso = await estoqueService.BaixarEstoqueAsync(itensBaixa);
-
-            if (!sucesso)
-                return StatusCode(503, "O Serviço de Estoque está indisponível ou o saldo é insuficiente. Tente novamente mais tarde.");
+            try
+            {
+                await estoqueService.BaixarEstoqueAsync(itensBaixa);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             // Atualiza o status para Fechada após o sucesso da baixa
             nota.Status = StatusNota.Fechada;

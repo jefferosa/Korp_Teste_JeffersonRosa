@@ -29,16 +29,18 @@ namespace Faturamento.API.Services
                 // Faz a chamada PUT para o Serviço de Estoque (que criaremos no próximo passo)
                 var response = await _httpClient.PutAsync("/api/produtos/baixar-estoque", content);
 
-                // O Polly (que configuraremos no Program.cs) vai tentar novamente caso a rede falhe.
-                // Se mesmo assim falhar, retornamos false para o Controller tratar amigavelmente.
-                return response.IsSuccessStatusCode;
+                if (!response.IsSuccessStatusCode)
+                {
+                    var erroDetalhado = await response.Content.ReadAsStringAsync();
+                    throw new Exception(string.IsNullOrWhiteSpace(erroDetalhado) ? "Erro ao baixar estoque." : erroDetalhado);
+                }
+                
+                return true;
             }
             catch (HttpRequestException)
             {
-
-                // Se após todas as tentativas do Polly a API de Estoque continuar fora do ar,
-                // o C# lança essa exceção. Nós a capturamos e retornamos false amigavelmente.
-                return false;
+                // Se a API de Estoque estiver totalmente fora do ar
+                throw new Exception("O Serviço de Estoque está indisponível no momento.");
             }
         }
     }
