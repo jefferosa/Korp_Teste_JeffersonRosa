@@ -138,9 +138,21 @@ function TelaCriarNota({ mudarAba }: { mudarAba: (aba: any) => void }) {
   }, [])
 
   const adicionarItem = () => {
+    setErro('');
     if (!codigoProduto || !quantidade) return
-    const desc = produtosDisp.find(p => p.codigo === codigoProduto)?.descricao || 'Desconhecido'
-    setItens([...itens, { codigoProduto, descricao: desc, quantidade: Number(quantidade) }])
+
+    const desc = produtosDisp.find(p => p.codigo === codigoProduto)
+
+    if (!desc) {
+      setErro('Produto selecionado não encontrado.')
+      return
+    }
+
+    if (Number(quantidade) > desc.saldo) {
+      setErro(`⚠️ Alerta de Estoque: Você tentou adicionar ${quantidade} unidades de "${desc.descricao}", mas o estoque atual é de apenas ${desc.saldo} unidades.`)
+      return
+    }
+    setItens([...itens, { codigoProduto, descricao: desc.descricao, quantidade: Number(quantidade) }])
     setCodigoProduto('')
     setQuantidade('')
   }
