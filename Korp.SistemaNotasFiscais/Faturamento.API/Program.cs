@@ -13,6 +13,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configuração do CORS para permitir que o Frontend se comunique com a API
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // Registrando o contexto do banco de dados (SQLite) para o Faturamento
 builder.Services.AddDbContext<FaturamentoDbContext>(options =>
     options.UseSqlite("Data Source=faturamento.db"));
@@ -40,6 +51,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthorization();
+
+// Aplica a política de CORS criada acima
+app.UseCors("AllowAll");
 
 app.MapControllers();
 

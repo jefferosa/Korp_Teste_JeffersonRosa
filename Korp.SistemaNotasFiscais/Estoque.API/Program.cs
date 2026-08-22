@@ -8,6 +8,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configuração do CORS para permitir que o Frontend se comunique com a API
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // Registrando o contexto do banco de dados (SQLite)
 builder.Services.AddDbContext<EstoqueDbContext>(options =>
     options.UseSqlite("Data Source=estoque.db"));
@@ -22,6 +33,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthorization();
+
+// Aplica a política de CORS criada acima
+app.UseCors("AllowAll");
 
 // Mapeia os controllers (como o ProdutosController) para receberem as rotas
 app.MapControllers();

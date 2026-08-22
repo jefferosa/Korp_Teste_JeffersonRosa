@@ -8,3 +8,36 @@
 *.sln.docstates
 *.db
 *.sqlite
+
+# =========================
+# Frontend (Node / React / Vite)
+# =========================
+# Dependências
+node_modules/
+/frontend/node_modules/
+
+# Pastas de build
+dist/
+dist-ssr/
+build/
+
+# Logs de NPM
+logs
+*.log
+npm-debug.log*
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =========================
+# Banco de Dados (SQLite)
+# =========================
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
